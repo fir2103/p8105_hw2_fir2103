@@ -1,0 +1,10 @@
+---
+title: "p8105_hw2_fir2103"
+author: "Farizah Rob"
+date: "2022-10-03"
+output: github_document
+---
+
+
+
+
