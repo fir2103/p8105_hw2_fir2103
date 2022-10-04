@@ -7,6 +7,7 @@ output: github_document
 
 ```{r}
 library(tidyverse)
+library(readxl)
 ```
 
 
@@ -84,4 +85,62 @@ nyc_transit %>%
 
 * 60 stations serve the A train. Out of them, 17 are ADA compliant. 
 
+### Problem 2
+
+```{r}
+#importing the dataset and cleaning names
+mr_trash_wheel <- read_excel("Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+                          sheet = 1) %>% 
+              janitor::clean_names()
+
+#removed the last 3 columns in the dataset (notes columns)
+#changed dumpster variable to numeric
+#changed sports ball variable to rounded integer
+#removed the rows where dumpster is NA (these are rows where there are notes) 
+#renaming weight_tons variable and volume_cubic_yards variable
+
+mr_trash_wheel <- mr_trash_wheel %>%
+  select(dumpster:homes_powered) %>% 
+  mutate(dumpster = as.numeric(dumpster), 
+         sports_balls=as.integer(round(sports_balls, digits=0))) %>%
+  drop_na(dumpster) %>% 
+  rename(weight = weight_tons, volume = volume_cubic_yards)
+```
+
+
+
+
+```{r}
+prof_trash_wheel <- read_excel("Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+                          sheet = 2) %>% janitor::clean_names()
+
+#changed dumpster variable to numeric
+#changed sports ball variable to rounded integer
+#removed the rows where dumpster is NA (these are rows where there are notes) 
+#renaming weight_tons variable and volume_cubic_yards variable
+
+prof_trash_wheel <- prof_trash_wheel %>% 
+  mutate(dumpster = as.numeric(dumpster), 
+         sports_balls=as.integer(round(sports_balls, digits=0))) %>%
+  drop_na(dumpster) %>% 
+  rename(weight = weight_tons, volume = volume_cubic_yards)
+```
+
+Binding the two data frames together
+
+```{r}
+#Added variable called "trash_wheel" (so we can distinguish between Mr and Professor)
+mr_trash_wheel <- mr_trash_wheel %>% 
+  mutate(trash_wheel="Mr Trash Wheel")
+
+prof_trash_wheel <- prof_trash_wheel %>% 
+  mutate(trash_wheel="Professor Trash Wheel")
+
+#Binded rows together and arranged by descending dumpster number
+#Tidied the data my rounding homes_powered to integers
+
+trash_wheel_df <- rbind(mr_trash_wheel, prof_trash_wheel) %>% 
+  arrange(dumpster) %>% 
+  mutate(homes_powered = round(homes_powered))
+```
 
