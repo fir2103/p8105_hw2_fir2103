@@ -5,6 +5,83 @@ date: "2022-10-03"
 output: github_document
 ---
 
+```{r}
+library(tidyverse)
+```
 
+
+### Problem 1
+
+```{r}
+nyc_transit <- read_csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv", col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>%
+  janitor::clean_names() %>% 
+  select(
+    line, station_name, station_latitude, station_longitude, 
+    starts_with("route"), entry, exit_only, vending, entrance_type, 
+    ada) %>% 
+  mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
+
+head(nyc_transit) #to see what data looks like
+names(nyc_transit) #variable names
+dim(nyc_transit) #number of rows and columns
+```
+
+The variables in the dataset contain the line (Avenue mainly) and station name. It has variables for the latitude and longitude of the station. The variables route1 through route11 display the different lines that go through that station and display different lines like 1, 2, 3, R, Q, etc. Entrance type has the values stair, elevator, easement, escalator, door, ramp and walkway. Vending refers to if there is any vending machine/store in the station. ADA is a logical variable implying whether the entry/exit is ADA compliant. 
+
+There are 1868 rows and 19 columns.
+
+To tidy the dataset, I cleaned the variable names (all lowercase), kept the variables (columns) we needed through the select function. I changed the "ada" variable to logical from character. 
+
+No, I do not think the dataset is tidy - the "entry" and "vending" variable could also be changed to logical. In addition, the route variable could be changed into variables for each line specifically and be a binary variable for each. This might be easier for computation. 
+
+```{r}
+nyc_transit %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+* There are 465 distinct stations. 
+
+```{r}
+nyc_transit %>% 
+  filter(ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+* 84 stations are ADA compliant. 
+
+```{r}
+nyc_transit %>% 
+  filter(vending == "NO") %>% 
+  pull(entry) %>% 
+  mean
+```
+
+* 37.7% of station entrances/exits without vending allow entrance. 
+
+Lastly, we write a code chunk to identify stations that serve the A train, and to assess how many of these are ADA compliant. As a first step, we tidy the data as alluded to previously; that is, we convert `route` from wide to long format. After this step, we can use tools from previous parts of the question (filtering to focus on the A train, and on ADA compliance; selecting and using `distinct` to obtain dataframes with the required stations in rows).
+
+```{r}
+nyc_transit %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A") %>% 
+  select(station_name, line) %>% 
+  distinct
+
+nyc_transit %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A", ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+* 60 stations serve the A train. Out of them, 17 are ADA compliant. 
 
 
