@@ -5,7 +5,7 @@ date: "2022-10-03"
 output: github_document
 ---
 
-```{r}
+```{r, message=FALSE}
 library(tidyverse)
 library(readxl)
 ```
@@ -21,21 +21,16 @@ nyc_transit <- read_csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv", col_typ
     starts_with("route"), entry, exit_only, vending, entrance_type, 
     ada) %>% 
   mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
-
-head(nyc_transit) #to see what data looks like
-names(nyc_transit) #variable names
-dim(nyc_transit) #number of rows and columns
 ```
 
-The variables in the dataset contain the line (Avenue mainly) and station name. It has variables for the latitude and longitude of the station. The variables route1 through route11 display the different lines that go through that station and display different lines like 1, 2, 3, R, Q, etc. Entrance type has the values stair, elevator, easement, escalator, door, ramp and walkway. Vending refers to if there is any vending machine/store in the station. ADA is a logical variable implying whether the entry/exit is ADA compliant. 
+The variables in the dataset are `r names(nyc_transit)`. We have information about the line and station name, along with station latitude and longitudes. The variables route1 through route11 display different lines that go through the station, and some examples  are `r unique(nyc_transit$route1)`. Entrance type has the values `r unique(nyc_transit$entrance_type)`. `vending` refers to if there is any vending machine/store in the station. `ada` is a logical variable implying whether the entry/exit is `ada` compliant. There are `r nrow(nyc_transit)` rows and `r ncol(nyc_transit)` columns. 
 
-There are 1868 rows and 19 columns.
+To tidy the dataset, I cleaned the variable names (all lowercase), kept the variables (columns) we needed through the `select` function. I changed the `ada` variable to logical from character. 
 
-To tidy the dataset, I cleaned the variable names (all lowercase), kept the variables (columns) we needed through the select function. I changed the "ada" variable to logical from character. 
-
-No, I do not think the dataset is tidy - the "entry" and "vending" variable could also be changed to logical. In addition, the route variable could be changed into variables for each line specifically and be a binary variable for each. This might be easier for computation. 
+No, I do not think the dataset is tidy - the `entry` and `vending` variable could also be changed to logical. In addition, the `route` variable could be changed into variables for each line specifically and be a binary variable for each. This might be easier for computation. 
 
 ```{r}
+#Selecting station name and line to get distinct stations
 nyc_transit %>% 
   select(station_name, line) %>% 
   distinct
@@ -44,6 +39,7 @@ nyc_transit %>%
 * There are 465 distinct stations. 
 
 ```{r}
+#ADA compliant stations
 nyc_transit %>% 
   filter(ada == TRUE) %>% 
   select(station_name, line) %>% 
@@ -53,6 +49,7 @@ nyc_transit %>%
 * 84 stations are ADA compliant. 
 
 ```{r}
+#Stations without vending that allow entrance
 nyc_transit %>% 
   filter(vending == "NO") %>% 
   pull(entry) %>% 
@@ -61,9 +58,8 @@ nyc_transit %>%
 
 * 37.7% of station entrances/exits without vending allow entrance. 
 
-Lastly, we write a code chunk to identify stations that serve the A train, and to assess how many of these are ADA compliant. As a first step, we tidy the data as alluded to previously; that is, we convert `route` from wide to long format. After this step, we can use tools from previous parts of the question (filtering to focus on the A train, and on ADA compliance; selecting and using `distinct` to obtain dataframes with the required stations in rows).
-
 ```{r}
+#Distinct stations that serve the A train
 nyc_transit %>% 
   pivot_longer(
     route1:route11,
@@ -73,6 +69,7 @@ nyc_transit %>%
   select(station_name, line) %>% 
   distinct
 
+#ADA compliant stations out of the stations that serve the A train
 nyc_transit %>% 
   pivot_longer(
     route1:route11,
@@ -87,9 +84,10 @@ nyc_transit %>%
 
 ### Problem 2
 
-```{r}
-#importing the dataset and cleaning names
-mr_trash_wheel <- read_excel("Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+Importing Mr. Trash Wheel dataset and tidying
+
+```{r, message=FALSE}
+mr_trash_wheel <- read_excel("Trash Wheel Collection Data.xlsx", 
                           sheet = 1) %>% 
               janitor::clean_names()
 
@@ -102,16 +100,16 @@ mr_trash_wheel <- read_excel("Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
 mr_trash_wheel <- mr_trash_wheel %>%
   select(dumpster:homes_powered) %>% 
   mutate(dumpster = as.numeric(dumpster), 
-         sports_balls=as.integer(round(sports_balls, digits=0))) %>%
+         sports_balls=as.integer(round(sports_balls, digits=0)), 
+         year = as.numeric(year)) %>%
   drop_na(dumpster) %>% 
   rename(weight = weight_tons, volume = volume_cubic_yards)
 ```
 
-
-
+Importing Professor Trash Wheel data sheet and tidying
 
 ```{r}
-prof_trash_wheel <- read_excel("Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+prof_trash_wheel <- read_excel("Trash Wheel Collection Data.xlsx", 
                           sheet = 2) %>% janitor::clean_names()
 
 #changed dumpster variable to numeric
@@ -121,9 +119,11 @@ prof_trash_wheel <- read_excel("Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
 
 prof_trash_wheel <- prof_trash_wheel %>% 
   mutate(dumpster = as.numeric(dumpster), 
-         sports_balls=as.integer(round(sports_balls, digits=0))) %>%
+         sports_balls = NA, 
+         year = as.numeric(year)) %>%
   drop_na(dumpster) %>% 
-  rename(weight = weight_tons, volume = volume_cubic_yards)
+  rename(weight = weight_tons, volume = volume_cubic_yards) %>% 
+  relocate(sports_balls, .after = chip_bags)
 ```
 
 Binding the two data frames together
@@ -131,16 +131,79 @@ Binding the two data frames together
 ```{r}
 #Added variable called "trash_wheel" (so we can distinguish between Mr and Professor)
 mr_trash_wheel <- mr_trash_wheel %>% 
-  mutate(trash_wheel="Mr Trash Wheel")
+  mutate(trash_wheel="Mr Trash Wheel") 
 
 prof_trash_wheel <- prof_trash_wheel %>% 
-  mutate(trash_wheel="Professor Trash Wheel")
+  mutate(trash_wheel="Professor Trash Wheel") 
 
 #Binded rows together and arranged by descending dumpster number
 #Tidied the data my rounding homes_powered to integers
 
-trash_wheel_df <- rbind(mr_trash_wheel, prof_trash_wheel) %>% 
-  arrange(dumpster) %>% 
+trash_wheel_df <- bind_rows(
+  mr_trash_wheel, prof_trash_wheel
+) %>% arrange(dumpster) %>% 
   mutate(homes_powered = round(homes_powered))
 ```
 
+Checking total sports balls collected by Mr. Trash Wheel in 2020 
+
+```{r}
+#filtering on year and Mr Trash Wheel
+
+mr_trash_2020 <- trash_wheel_df %>% filter(year==2020 & trash_wheel=="Mr Trash Wheel")
+sports_balls_2020 <- sum(mr_trash_2020$sports_balls)
+```
+
+The resulting dataset has `r nrow(trash_wheel_df)` rows and `r ncol(trash_wheel_df)` columns. `Dumpster` variable is the ID variable for the dumpster. `weight` is represented in tonnes and `volume` in cubic tonnes per yard. The variables `r colnames(trash_wheel_df)[7:13]` refers to the litter type. Dates of trash collection are also as variables in the dataset. 
+
+* The total weight of trash collected by Professor Trash Wheel is `r sum(prof_trash_wheel$weight)`. 
+
+* The total number of sports balls collected by Mr. Trash Wheel in 2020 is `r sports_balls_2020`. 
+
+### Problem 3 
+
+Importing and tidying politicans data 
+
+```{r}
+pols_month <- read_csv("./fivethirtyeight_datasets/pols-month.csv") %>%
+  janitor::clean_names() %>% 
+  separate(mon, c("year", "month", "day"), sep = "-", convert = TRUE) %>% 
+  mutate(month=month.abb[month], 
+         president=ifelse(prez_gop==1, "gop", 
+                            ifelse(prez_dem==1, "dem", NA))) %>% 
+  select(-c(prez_dem, prez_gop, day)) %>% 
+  arrange(year, month)
+```
+
+Importing and tidying `snp` data
+
+```{r}
+snp <- read_csv("./fivethirtyeight_datasets/snp.csv") %>% 
+  janitor::clean_names() %>% 
+  separate(date, c("month", "day", "year"), sep="/", convert=TRUE) %>%
+  mutate(year_pref = ifelse(year<=22, 2000, 1900), 
+         year = year_pref+year,
+         month=month.abb[as.numeric(month)]) %>% 
+  select(year, month, close) %>% 
+  arrange(year, month)
+```
+
+Importing and tidying `unemployment` data
+
+```{r}
+unemployment_wide <- read_csv("./fivethirtyeight_datasets/unemployment.csv") 
+
+unemployment_long <- pivot_longer(unemployment_wide, 
+    Jan:Dec, 
+    names_to = "month",
+    values_to = "unemployment"
+  ) %>% 
+  rename(year=Year)
+
+pols_snp <- left_join(pols_month, snp, by = c("year", "month"))
+pols_snp_unemp <- left_join(pols_snp, unemployment_long, by = c("year", "month"))
+```
+
+The `pols_month` data has `r nrow(pols_month)` rows and `r ncol(pols_month)` columns - it has information about the numbers of politicians (president, senator, governor, representative) who are democrats or republicans.  The `snp` data has `r nrow(snp)` rows and `r ncol(snp)` columns - it contains information about the Standard & Poor's stock market index, the `close` variable which is the closing values of the index on the given `date`. After transforming the `unemployment` data into long-format (by putting the months into one column and unemployment values as another variable), it has `r nrow(unemployment_long)` rows and `r ncol(unemployment_long)` columns - it gives the percentage of unemployment in each `month` of the associated `year`. 
+
+The merged dataset `pols_snp_unemp` has `r nrow(pols_snp_unemp)` rows and `r ncol(pols_snp_unemp)` columns. The range of years represented are `r range(pols_snp_unemp$year)`. We have unemployment data from year `r unemployment_long[1,"year"]`  and snp data from year `r snp[1,"year"]`. Previous years have `NA` values for these. 
